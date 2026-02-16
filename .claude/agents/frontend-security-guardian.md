@@ -36,7 +36,7 @@ Examine each of these focus areas in order:
 **1. Cross-Site Scripting (XSS)**
 - Search for `dangerouslySetInnerHTML` usage. If found, determine: is the input sanitized? With what library? Is the sanitization sufficient?
 - Check if user-controlled data is interpolated into HTML attributes, `href`, `src`, `style`, or event handlers.
-- Look for URL-based injection via `window.location`, `useSearchParams`, `useParams`, or query string parsing that flows into rendered output.
+- Look for URL-based injection via `window.location`, `Route.useSearch()`, `Route.useParams()`, or query string parsing that flows into rendered output.
 - Check for DOM manipulation via `document.innerHTML`, `document.write`, `eval()`, `Function()`, or `setTimeout/setInterval` with string arguments.
 - Verify that React's default JSX escaping is not being bypassed.
 
@@ -77,6 +77,17 @@ Examine each of these focus areas in order:
 - Examine CORS-related configurations in the Axios client.
 - Check for insecure `target="_blank"` links missing `rel="noopener noreferrer"`.
 - Review error boundaries: do they leak stack traces or internal state to users?
+
+## SCOPE DECONFLICTION (When Other Agents Are in the Pipeline)
+
+When the orchestrator assigns multiple review agents, **avoid duplicating work**. Defer to the specialized agent in their domain:
+
+- **If `frontend-code-reviewer` is also assigned:** Do not flag general correctness issues (TypeScript type quality, architecture violations, naming conventions, dead code) unless they have a direct security implication. Focus exclusively on security vulnerabilities, auth/token handling, data exposure, and input sanitization.
+- **If `dx-standards-guardian` is also assigned:** Do not flag naming, typing consistency, or code organization issues. Focus only on security-impacting patterns.
+- **If `react-perf-auditor` is also assigned:** Do not flag performance-related concerns (bundle size, re-renders, caching strategy) unless they create a security vulnerability (e.g., secrets in the client bundle). Focus on your security audit domains.
+- **If you are the ONLY reviewer:** Cover all audit areas fully, including any correctness or data handling concerns that overlap with other agents' domains.
+
+---
 
 ### Phase 3: Report Generation
 
@@ -142,7 +153,7 @@ This application uses:
 - **Supabase Storage** for file uploads (designs bucket)
 - **Axios with interceptors** for API communication (auto-attaches auth tokens)
 - **Zustand with persist middleware** for cart state in localStorage
-- **React Router v6** for routing with PrivateRoute and AdminRoute guards
+- **TanStack Router** for type-safe, file-based routing with `beforeLoad` auth guards
 - **Stripe Elements** for payment processing (PCI-compliant components)
 - **React Hook Form + Zod** for form validation
 - **react-hot-toast** for notifications

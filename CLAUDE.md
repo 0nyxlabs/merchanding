@@ -19,7 +19,7 @@ This is the **frontend application** for a **merchandising platform** where user
 - **React 18+** - UI library with Hooks
 - **TypeScript** - Type safety
 - **Vite** - Fast build tool and dev server
-- **React Router v6** - Client-side routing
+- **TanStack Router** - Type-safe, file-based routing
 
 ### State Management
 - **Zustand** - Lightweight global state (auth, cart, UI)
@@ -64,33 +64,30 @@ merchanding/
 │   ├── main.tsx                    # App entry point
 │   ├── App.tsx                     # Root component
 │   │
-│   ├── router/                     # Routing configuration
-│   │   ├── index.tsx               # Router setup
-│   │   ├── routes.tsx              # Route definitions
-│   │   ├── PrivateRoute.tsx        # Auth-protected routes
-│   │   └── AdminRoute.tsx          # Admin-only routes
-│   │
-│   ├── pages/                      # Page components (one per route)
-│   │   ├── auth/
-│   │   │   ├── LoginPage.tsx
-│   │   │   └── RegisterPage.tsx
-│   │   ├── public/
-│   │   │   ├── HomePage.tsx
-│   │   │   ├── BrowsePage.tsx
-│   │   │   └── CampaignDetailPage.tsx
-│   │   ├── user/
-│   │   │   ├── CartPage.tsx
-│   │   │   ├── CheckoutPage.tsx
-│   │   │   ├── OrdersPage.tsx
-│   │   │   ├── OrderDetailPage.tsx
-│   │   │   ├── OrderSuccessPage.tsx
-│   │   │   ├── ProfilePage.tsx
-│   │   │   └── DesignsPage.tsx
-│   │   └── admin/
-│   │       ├── DashboardPage.tsx
-│   │       ├── OrdersManagementPage.tsx
-│   │       ├── DesignsManagementPage.tsx
-│   │       └── CampaignsManagementPage.tsx
+│   ├── routes/                     # File-based routing (TanStack Router)
+│   │   ├── __root.tsx              # Root layout (Outlet, Header, Footer)
+│   │   ├── index.tsx               # / (HomePage)
+│   │   ├── browse.tsx              # /browse (BrowsePage)
+│   │   ├── campaigns.$campaignId.tsx # /campaigns/:id (CampaignDetailPage)
+│   │   ├── (auth)/                 # Auth pages (public)
+│   │   │   ├── login.tsx           # /login
+│   │   │   └── register.tsx        # /register
+│   │   ├── (authenticated)/        # Protected routes (beforeLoad guard)
+│   │   │   ├── route.tsx           # Auth guard via beforeLoad
+│   │   │   ├── cart.tsx            # /cart
+│   │   │   ├── checkout.tsx        # /checkout
+│   │   │   ├── orders/
+│   │   │   │   ├── index.tsx       # /orders
+│   │   │   │   ├── $orderId.tsx    # /orders/:id
+│   │   │   │   └── $orderId.success.tsx # /orders/:id/success
+│   │   │   ├── profile.tsx         # /profile
+│   │   │   └── designs.tsx         # /designs
+│   │   └── (admin)/                # Admin routes (beforeLoad admin guard)
+│   │       ├── route.tsx           # Admin guard via beforeLoad
+│   │       ├── dashboard.tsx       # /admin/dashboard
+│   │       ├── orders-management.tsx # /admin/orders
+│   │       ├── designs-management.tsx # /admin/designs
+│   │       └── campaigns-management.tsx # /admin/campaigns
 │   │
 │   ├── components/                 # Reusable components
 │   │   ├── ui/                     # shadcn/ui primitives
@@ -495,7 +492,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 ```tsx
 // hooks/useAuth.ts
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'react-hot-toast';
@@ -556,7 +553,7 @@ export const useAuth = () => {
       if (error) throw error;
 
       toast.success('Welcome back!');
-      navigate('/browse');
+      navigate({ to: '/browse' });
       return data;
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign in');
@@ -570,7 +567,7 @@ export const useAuth = () => {
       if (error) throw error;
 
       clearUser();
-      navigate('/login');
+      navigate({ to: '/login' });
       toast.success('Signed out successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign out');
@@ -688,49 +685,79 @@ toast.promise(
 
 ## 🔐 AUTHENTICATION FLOW
 
-### Protected Route Component
+### Protected Route Guard (beforeLoad)
+
+TanStack Router uses `beforeLoad` to protect routes — no wrapper components needed. Auth guards are defined in layout route files.
 
 ```tsx
-// router/PrivateRoute.tsx
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+// routes/(authenticated)/route.tsx
+import { createFileRoute, redirect, Outlet } from '@tanstack/react-router';
+import { supabase } from '@/services/supabase';
 
-export const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, user } = useAuth();
+export const Route = createFileRoute('/(authenticated)')({
+  beforeLoad: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
 
-  if (user === undefined) {
-    return <LoadingSpinner />;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-};
+    if (!session) {
+      throw redirect({
+        to: '/login',
+        search: { redirect: location.pathname },
+      });
+    }
+  },
+  component: () => <Outlet />,
+});
 ```
 
-### Admin Route Component
+### Admin Route Guard (beforeLoad)
 
 ```tsx
-// router/AdminRoute.tsx
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+// routes/(admin)/route.tsx
+import { createFileRoute, redirect, Outlet } from '@tanstack/react-router';
+import { supabase } from '@/services/supabase';
+import { useAuthStore } from '@/store/authStore';
 
-export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+export const Route = createFileRoute('/(admin)')({
+  beforeLoad: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+    if (!session) {
+      throw redirect({ to: '/login' });
+    }
 
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
-  }
+    const { isAdmin } = useAuthStore.getState();
+    if (!isAdmin()) {
+      throw redirect({ to: '/' });
+    }
+  },
+  component: () => <Outlet />,
+});
+```
 
-  return <>{children}</>;
-};
+### Root Layout
+
+```tsx
+// routes/__root.tsx
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { QueryClient } from '@tanstack/react-query';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+
+interface RouterContext {
+  queryClient: QueryClient;
+}
+
+export const Route = createRootRouteWithContext<RouterContext>()({
+  component: () => (
+    <>
+      <Header />
+      <main className="min-h-screen">
+        <Outlet />
+      </main>
+      <Footer />
+    </>
+  ),
+});
 ```
 
 ---
@@ -812,21 +839,27 @@ export const PaymentForm = () => {
 
 ### Code Splitting
 
+TanStack Router handles code splitting automatically with `autoCodeSplitting` in the Vite plugin, or manually with `lazyRouteComponent`:
+
 ```tsx
-// Lazy load pages
-import { lazy, Suspense } from 'react';
+// vite.config.ts — automatic code splitting
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 
-const AdminDashboard = lazy(() => import('@/pages/admin/DashboardPage'));
+export default defineConfig({
+  plugins: [
+    TanStackRouterVite({ autoCodeSplitting: true }), // Must come before react()
+    react(),
+  ],
+});
 
-// In routes
-<Route
-  path="/admin"
-  element={
-    <Suspense fallback={<LoadingSpinner />}>
-      <AdminDashboard />
-    </Suspense>
-  }
-/>
+// Or manual lazy loading in route files:
+// routes/(admin)/dashboard.tsx
+import { createFileRoute } from '@tanstack/react-router';
+import { lazyRouteComponent } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/(admin)/dashboard')({
+  component: lazyRouteComponent(() => import('@/components/features/admin/DashboardView')),
+});
 ```
 
 ### Image Optimization
@@ -862,27 +895,49 @@ export const ImageWithFallback = ({
 };
 ```
 
-### React Query Configuration
+### React Query + TanStack Router Configuration
 
 ```tsx
 // main.tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { createRouter, RouterProvider } from '@tanstack/react-router';
+import { routeTree } from './routeTree.gen';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (v5: renamed from cacheTime)
       refetchOnWindowFocus: false,
       retry: 1,
     },
   },
 });
 
-// Wrap app
-<QueryClientProvider client={queryClient}>
-  <App />
-</QueryClientProvider>
+// Create router with queryClient in context
+const router = createRouter({
+  routeTree,
+  context: { queryClient },
+  defaultPreload: 'intent',
+});
+
+// Type registration for type-safe navigation
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
+
+// App entry
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+}
 ```
 
 ---
@@ -1000,7 +1055,7 @@ npm update                 # Update dependencies
 - [ ] Initialize Vite + React + TypeScript project
 - [ ] Install and configure Tailwind CSS
 - [ ] Setup Supabase client
-- [ ] Configure React Router
+- [ ] Configure TanStack Router (file-based routing + Vite plugin)
 - [ ] Setup Zustand stores
 - [ ] Setup React Query
 - [ ] Add shadcn/ui components

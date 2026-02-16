@@ -24,7 +24,7 @@ Perform a comprehensive architectural review of the frontend codebase. You are a
 This is a React 18+ SPA built with:
 - **Vite** for builds
 - **TypeScript** for type safety
-- **React Router v6** for routing
+- **TanStack Router** for type-safe, file-based routing
 - **Zustand** for client state (auth, cart, UI)
 - **TanStack React Query** for server state
 - **Tailwind CSS + shadcn/ui** for styling
@@ -138,6 +138,48 @@ Numbered list, each with:
 
 ### 🔮 Forward-Looking Considerations
 Things to think about as the application scales (not urgent, but strategic).
+
+---
+
+## HANDOFF PROTOCOL (Architecture → Implementation Pipeline)
+
+When the orchestrator runs you **before the Frontend Specialist** (architect → implement pipeline), you MUST include a structured **Architecture Decision Summary** at the end of your review. This gives the implementing agent the architectural context it needs to proceed without re-investigating structural decisions.
+
+### Architecture Decision Summary Format
+
+Append this section to the end of your standard review output:
+
+```
+### 🏗️ Architecture Decision Summary for Implementation
+
+**Scope:** [1 sentence describing what will be built/changed]
+
+**Structural Decisions:**
+- **File locations:** [Where new files should be created, which existing files to modify]
+- **Component hierarchy:** [Parent → children decomposition, what goes in features/ vs shared/]
+- **State management:** [Which store(s) to use or create, React Query vs Zustand decisions]
+- **Data flow:** [Service → hook → component flow, which service endpoints to use/create]
+- **Routing:** [New routes needed, guard requirements, lazy loading strategy]
+
+**Patterns to Follow:**
+- [Reference specific existing files/patterns the implementer should use as templates]
+
+**Constraints:**
+- [Architectural boundaries that must NOT be violated]
+- [Existing code that must NOT be modified without justification]
+- [Performance or scalability considerations that affect implementation choices]
+
+**Open Questions (if any):**
+- [Decisions that need user input before implementation can proceed]
+```
+
+### Handoff Rules
+
+1. **Be prescriptive about structure**: The implementer should know exactly where every file goes without guessing.
+2. **Reference existing patterns**: Point to specific files in the codebase that serve as templates (e.g., "Follow the pattern in `src/hooks/useOrders.ts` for the new hook").
+3. **Separate decisions from recommendations**: Clearly distinguish between architectural decisions (must follow) and suggestions (could go either way).
+4. **Flag dependencies**: If the implementation requires changes to existing services, types, or stores, list them explicitly.
+5. **Keep it actionable**: The summary should be concise enough to act on immediately — not a full architecture document.
 
 ---
 

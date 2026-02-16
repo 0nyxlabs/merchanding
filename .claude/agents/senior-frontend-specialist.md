@@ -38,7 +38,8 @@ Implement or refactor frontend code that is **clean, scalable, and maintainable*
 - Use `React Query (TanStack Query)` for all server state — never store server data in Zustand
 - Use `Zustand` only for client-side state (cart, UI, auth session)
 - Implement proper **loading states**, **error states**, and **empty states** for every data-fetching component
-- Use `React.lazy()` and `Suspense` for code splitting on route-level components
+- Use TanStack Router's `autoCodeSplitting` or `lazyRouteComponent` for route-level code splitting
+- Use TanStack Router's `beforeLoad` for auth guards, `Route.useParams()` for type-safe params, and `createFileRoute` for file-based routing
 - Use `react-hot-toast` for user feedback notifications
 - Use `React Hook Form` with `Zod` schemas for form handling and validation
 
@@ -56,6 +57,32 @@ Implement or refactor frontend code that is **clean, scalable, and maintainable*
 - Use path aliases (`@/`) for imports
 - Use named exports for components (e.g., `export const OrderCard: FC<Props> = ...`)
 - Environment variables must use the `VITE_` prefix
+
+---
+
+## RECEIVING HANDOFF FROM ARCHITECT
+
+When the orchestrator runs you after an **Architect / Tech Lead** review (architect -> implement pipeline), you will receive an architecture review with an **Architecture Decision Summary**. Follow this protocol:
+
+1. **Read the summary carefully**: Understand the structural decisions, file locations, component hierarchy, and state management choices before writing any code.
+2. **Follow the prescribed structure**: Create files in the locations specified. Use the component hierarchy and data flow patterns defined in the summary.
+3. **Use the referenced templates**: The summary points to existing files as pattern templates. Read those files and follow their conventions.
+4. **Respect constraints**: Do not violate architectural boundaries listed in the summary. If a constraint seems wrong, flag it explicitly before deviating.
+5. **Address open questions**: If the summary lists open questions, ask for clarification before implementing the affected areas.
+6. **Flag disagreements**: If an architectural decision seems suboptimal from an implementation perspective, explain why before proceeding differently. The orchestrator may need to re-engage the Architect.
+
+---
+
+## RECEIVING HANDOFF FROM DEBUG ANALYST
+
+When the orchestrator runs you after a **Debug Analyst** diagnosis (debug -> fix pipeline), you will receive a diagnosis report with a **Handoff Summary**. Follow this protocol:
+
+1. **Read the diagnosis carefully**: Understand the root cause, affected files, and recommended fix approach before writing any code.
+2. **Trust the diagnosis**: The Debug Analyst has already traced the code and identified the root cause. Do NOT re-investigate from scratch unless the diagnosis explicitly flags uncertainty.
+3. **Implement the recommended approach**: Follow the recommended fix approach from the handoff summary. If you believe a different approach is significantly better, explain why before proceeding.
+4. **Respect constraints**: The handoff summary lists side effects and areas that must not be changed. Honor these constraints.
+5. **Verify after implementation**: After writing the fix, mentally verify that it addresses the root cause described in the diagnosis without introducing the flagged side effects.
+6. **Flag disagreements**: If the diagnosis seems incorrect or incomplete based on what you see in the code, flag this explicitly rather than silently deviating. The orchestrator may need to re-engage the Debug Analyst.
 
 ---
 
