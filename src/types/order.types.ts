@@ -1,8 +1,7 @@
-import type { ORDER_STATUS } from '@/utils/constants'
+import type { ORDER_STATUS, PAYMENT_STATUS } from '@/utils/constants'
 
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS]
-
-export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
+export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS]
 
 export interface ShippingAddress {
   fullName: string
@@ -15,38 +14,63 @@ export interface ShippingAddress {
   phone?: string
 }
 
+// Represents the order_items table
 export interface OrderItem {
   id: string
-  productId: string
-  productName: string
-  imageUrl: string
+  orderId: string
+  campaignProductId: string
+  productType: string
+  designTitle: string
+  designThumbnailUrl?: string
+  designId?: string
   size: string
-  color: string
+  color?: string
   quantity: number
   unitPrice: number
   totalPrice: number
+  createdAt: string
 }
 
-export interface OrderTrackingEvent {
+// Represents the order_status_history table
+export interface OrderStatusHistory {
+  id: string
+  orderId: string
   status: OrderStatus
-  timestamp: string
-  description: string
+  changedBy?: string
+  notes?: string
+  trackingNumber?: string
+  createdAt: string
 }
 
+// Represents the orders table
 export interface Order {
   id: string
   orderNumber: string
-  userId: string
-  items: OrderItem[]
+  userId?: string
+  campaignId: string
+  customerEmail: string
+  customerName: string
   shippingAddress: ShippingAddress
+  billingAddress?: ShippingAddress
+  shippingMethod: string
+  shippingCost: number
   subtotal: number
-  shipping: number
   tax: number
+  discount: number
   total: number
-  status: OrderStatus
-  paymentStatus: PaymentStatus
   stripePaymentIntentId?: string
-  trackingEvents: OrderTrackingEvent[]
+  paymentMethod?: string
+  paymentStatus: PaymentStatus
+  printfulOrderId?: number
+  trackingNumber?: string
+  trackingUrl?: string
+  shippedAt?: string
+  deliveredAt?: string
+  status: OrderStatus
+  cancelledAt?: string
+  cancellationReason?: string
+  refundedAt?: string
+  refundAmount?: number
   createdAt: string
   updatedAt: string
 }
@@ -54,6 +78,7 @@ export interface Order {
 export interface OrderSummary {
   id: string
   orderNumber: string
+  campaignId: string
   total: number
   status: OrderStatus
   paymentStatus: PaymentStatus
@@ -62,15 +87,21 @@ export interface OrderSummary {
 }
 
 export interface CreateOrderDto {
+  campaignId: string
   items: {
-    productId: string
-    variantId: string
+    campaignProductId: string
+    size: string
+    color?: string
     quantity: number
   }[]
   shippingAddress: ShippingAddress
+  billingAddress?: ShippingAddress
+  shippingMethod: string
+  couponCode?: string
 }
 
 export interface UpdateOrderStatusDto {
   status: OrderStatus
-  description?: string
+  notes?: string
+  trackingNumber?: string
 }

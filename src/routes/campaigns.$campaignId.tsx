@@ -8,24 +8,33 @@ import { Separator } from '@/components/ui/separator'
 import { ImageWithFallback } from '@/components/shared/ImageWithFallback'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { ProductCard } from '@/components/features/products/ProductCard'
-import { ProductVariantSelector } from '@/components/features/products/ProductVariantSelector'
+import { VoteButton } from '@/components/features/designs/VoteButton'
+import { CommentSection } from '@/components/features/designs/CommentSection'
 import { useCampaign } from '@/hooks/useCampaigns'
-import { useProductsByCampaign, useProduct } from '@/hooks/useProducts'
+import { useCampaignProducts, useCampaignProduct } from '@/hooks/useProducts'
+import { useDesignsByCampaign } from '@/hooks/useDesigns'
 import { useCartStore } from '@/store/cartStore'
 import { formatCurrency } from '@/utils/formatters'
 import { toast } from 'react-hot-toast'
-import type { ProductSize, ProductColor } from '@/types'
+import type { ProductSize } from '@/types'
 
 export const Route = createFileRoute('/campaigns/$campaignId')({
   component: CampaignDetailPage,
 })
 
+const ACTIVE_STATUSES: string[] = ['open', 'voting', 'presale']
+const SIZES: ProductSize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+
 function CampaignDetailPage() {
   const { campaignId } = Route.useParams()
   const { data: campaign, isLoading: campaignLoading } = useCampaign(campaignId)
-  const { data: products, isLoading: productsLoading } = useProductsByCampaign(campaignId)
+  const { data: products, isLoading: productsLoading } = useCampaignProducts(campaignId)
+  const { data: designs, isLoading: designsLoading } = useDesignsByCampaign(campaignId)
 
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null)
+  const [selectedDesignId, setSelectedDesignId] = useState<string | null>(null)
+
+  const isVotingPhase = campaign?.status === 'voting'
 
   if (campaignLoading) {
     return <CampaignDetailSkeleton />
@@ -47,6 +56,8 @@ function CampaignDetailPage() {
     )
   }
 
+  const isActive = ACTIVE_STATUSES.includes(campaign.status)
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       {/* Back link */}
@@ -62,19 +73,20 @@ function CampaignDetailPage() {
       <div className="mb-8 grid gap-8 lg:grid-cols-2">
         <div className="aspect-[4/3] overflow-hidden rounded-xl">
           <ImageWithFallback
-            src={campaign.imageUrl}
+            src={campaign.coverImageUrl ?? ''}
             alt={campaign.name}
             className="h-full w-full object-cover"
           />
         </div>
         <div className="flex flex-col justify-center">
-          <Badge variant={campaign.status === 'active' ? 'default' : 'outline'} className="mb-3 w-fit">
+          <Badge variant={isActive ? 'default' : 'outline'} className="mb-3 w-fit capitalize">
             {campaign.status}
           </Badge>
           <h1 className="text-3xl font-bold tracking-tight">{campaign.name}</h1>
           <p className="mt-3 text-muted-foreground">{campaign.description}</p>
           <p className="mt-4 text-sm text-muted-foreground">
-            {campaign.productCount} {campaign.productCount === 1 ? 'product' : 'products'} available
+            {campaign.totalPreorders}{' '}
+            {campaign.totalPreorders === 1 ? 'preorder' : 'preorders'}
           </p>
         </div>
       </div>
@@ -114,25 +126,88 @@ function CampaignDetailPage() {
       {/* Product detail panel */}
       {selectedProductId && (
         <ProductDetailPanel
+          campaignId={campaignId}
           productId={selectedProductId}
           onClose={() => setSelectedProductId(null)}
         />
+      )}
+
+      {/* Voting section — only during voting phase */}
+      {isVotingPhase && (
+        <>
+          <Separator className="mb-8 mt-8" />
+          <h2 className="mb-6 text-2xl font-bold">Vote for Designs</h2>
+          {designsLoading ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="space-y-3">
+                  <Skeleton className="aspect-square w-full rounded-xl" />
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              ))}
+            </div>
+          ) : !designs?.length ? (
+            <EmptyState
+              title="No designs submitted yet"
+              description="Check back once designers submit their work."
+            />
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {designs.map((design) => (
+                <div
+                  key={design.id}
+                  className="overflow-hidden rounded-xl border cursor-pointer"
+                  onClick={() =>
+                    setSelectedDesignId(selectedDesignId === design.id ? null : design.id)
+                  }
+                >
+                  <div className="aspect-square overflow-hidden">
+                    <ImageWithFallback
+                      src={design.thumbnailUrl ?? design.originalFileUrl}
+                      alt={design.title}
+                      className="h-full w-full object-cover transition-transform hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3">
+                    <p className="truncate text-sm font-medium">{design.title}</p>
+                    <VoteButton
+                      designId={design.id}
+                      campaignId={campaignId}
+                      votesCount={design.votesCount}
+                    />
+                  </div>
+
+                  {selectedDesignId === design.id && (
+                    <div
+                      className="border-t p-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <CommentSection designId={design.id} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
 }
 
 function ProductDetailPanel({
+  campaignId,
   productId,
   onClose,
 }: {
+  campaignId: string
   productId: string
   onClose: () => void
 }) {
-  const { data: product, isLoading } = useProduct(productId)
+  const { data: product, isLoading } = useCampaignProduct(campaignId, productId)
   const addItem = useCartStore((s) => s.addItem)
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null)
-  const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null)
 
   if (isLoading) {
     return (
@@ -146,48 +221,43 @@ function ProductDetailPanel({
 
   if (!product) return null
 
-  const selectedVariant = product.variants.find(
-    (v) => v.size === selectedSize && v.color.hex === selectedColor?.hex,
-  )
-
   const handleAddToCart = () => {
-    if (!selectedVariant) {
-      toast.error('Please select a size and color')
-      return
-    }
-
-    if (selectedVariant.stock <= 0) {
-      toast.error('This variant is out of stock')
+    if (!selectedSize) {
+      toast.error('Please select a size')
       return
     }
 
     addItem({
-      id: selectedVariant.id,
-      name: product.name,
-      price: selectedVariant.price,
+      id: product.id,
+      campaignId,
+      designId: product.designId,
+      designTitle: product.productType,
+      productType: product.productType,
+      size: selectedSize,
+      price: product.retailPrice,
       quantity: 1,
-      image: product.images[0],
-      variantId: selectedVariant.id,
+      thumbnailUrl: product.thumbnailUrl,
     })
     toast.success('Added to cart!')
+    onClose()
   }
 
   return (
     <div className="mt-8 rounded-xl border p-6">
       <div className="grid gap-8 md:grid-cols-2">
-        {/* Product images */}
-        <div className="aspect-square overflow-hidden rounded-lg">
+        {/* Product thumbnail */}
+        <div className="aspect-square overflow-hidden rounded-lg bg-muted">
           <ImageWithFallback
-            src={product.images[0] ?? ''}
-            alt={product.name}
+            src={product.thumbnailUrl ?? ''}
+            alt={product.productType}
             className="h-full w-full object-cover"
           />
         </div>
 
-        {/* Product info + variant selector */}
+        {/* Product info */}
         <div>
           <div className="mb-1 flex items-start justify-between">
-            <h3 className="text-2xl font-bold">{product.name}</h3>
+            <h3 className="text-2xl font-bold capitalize">{product.productType}</h3>
             <button
               onClick={onClose}
               className="text-sm text-muted-foreground hover:text-foreground"
@@ -195,24 +265,35 @@ function ProductDetailPanel({
               Close
             </button>
           </div>
-          <p className="mb-4 text-lg font-semibold text-primary">
-            {formatCurrency(selectedVariant?.price ?? product.basePrice)}
+          <p className="mb-6 text-lg font-semibold text-primary">
+            {formatCurrency(product.retailPrice)}
           </p>
-          <p className="mb-6 text-sm text-muted-foreground">{product.description}</p>
 
-          <ProductVariantSelector
-            variants={product.variants}
-            selectedSize={selectedSize}
-            selectedColor={selectedColor}
-            onSizeChange={setSelectedSize}
-            onColorChange={setSelectedColor}
-          />
+          {/* Size selector */}
+          <div className="mb-6">
+            <p className="mb-2 text-sm font-medium">Size</p>
+            <div className="flex flex-wrap gap-2">
+              {SIZES.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className={`flex h-10 min-w-[2.5rem] items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors ${
+                    selectedSize === size
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-input bg-background hover:bg-accent'
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <Button
-            className="mt-6 w-full"
+            className="w-full"
             size="lg"
             onClick={handleAddToCart}
-            disabled={!selectedVariant || selectedVariant.stock <= 0}
+            disabled={!selectedSize}
           >
             <ShoppingCart className="mr-2 h-5 w-5" />
             Add to Cart

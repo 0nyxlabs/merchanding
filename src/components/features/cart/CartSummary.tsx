@@ -22,6 +22,12 @@ export const CartSummary: FC<CartSummaryProps> = ({ totals }) => {
         <span className="text-muted-foreground">Tax</span>
         <span>{formatCurrency(totals.tax)}</span>
       </div>
+      {totals.discount > 0 && (
+        <div className="flex justify-between text-sm text-green-600">
+          <span>Discount</span>
+          <span>-{formatCurrency(totals.discount)}</span>
+        </div>
+      )}
       <Separator />
       <div className="flex justify-between font-semibold">
         <span>Total</span>

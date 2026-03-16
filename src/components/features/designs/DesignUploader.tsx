@@ -6,18 +6,30 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useCreateDesign } from '@/hooks/useDesigns'
 import { toast } from 'react-hot-toast'
 
+const PRODUCT_TYPES = [
+  { value: 't-shirt', label: 'T-Shirt' },
+  { value: 'hoodie', label: 'Hoodie' },
+  { value: 'cap', label: 'Cap' },
+  { value: 'mug', label: 'Mug' },
+  { value: 'tote-bag', label: 'Tote Bag' },
+  { value: 'poster', label: 'Poster' },
+]
+
 interface DesignUploaderProps {
+  campaignId: string
   onSuccess?: () => void
 }
 
-export const DesignUploader: FC<DesignUploaderProps> = ({ onSuccess }) => {
+export const DesignUploader: FC<DesignUploaderProps> = ({ campaignId, onSuccess }) => {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [name, setName] = useState('')
+  const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [targetProducts, setTargetProducts] = useState<string[]>([])
 
   const createDesign = useCreateDesign()
 
@@ -27,10 +39,10 @@ export const DesignUploader: FC<DesignUploaderProps> = ({ onSuccess }) => {
 
     setFile(selected)
     setPreview(URL.createObjectURL(selected))
-    if (!name) {
-      setName(selected.name.replace(/\.[^/.]+$/, ''))
+    if (!title) {
+      setTitle(selected.name.replace(/\.[^/.]+$/, ''))
     }
-  }, [name])
+  }, [title])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -46,15 +58,32 @@ export const DesignUploader: FC<DesignUploaderProps> = ({ onSuccess }) => {
     setFile(null)
     if (preview) URL.revokeObjectURL(preview)
     setPreview(null)
-    setName('')
+    setTitle('')
     setDescription('')
+    setTargetProducts([])
+  }
+
+  const toggleProduct = (value: string) => {
+    setTargetProducts((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+    )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!file || !name.trim()) return
+    if (!file || !title.trim()) return
+    if (targetProducts.length === 0) {
+      toast.error('Select at least one product type')
+      return
+    }
 
-    await createDesign.mutateAsync({ file, name: name.trim(), description: description.trim() || undefined })
+    await createDesign.mutateAsync({
+      file,
+      campaignId,
+      title: title.trim(),
+      description: description.trim() || undefined,
+      targetProducts,
+    })
     handleClear()
     onSuccess?.()
   }
@@ -91,13 +120,13 @@ export const DesignUploader: FC<DesignUploaderProps> = ({ onSuccess }) => {
         </div>
       )}
 
-      {/* Name */}
+      {/* Title */}
       <div>
-        <Label htmlFor="design-name">Design Name</Label>
+        <Label htmlFor="design-title">Design Title</Label>
         <Input
-          id="design-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          id="design-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           placeholder="My awesome design"
           required
           className="mt-1"
@@ -117,7 +146,30 @@ export const DesignUploader: FC<DesignUploaderProps> = ({ onSuccess }) => {
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={!file || !name.trim() || createDesign.isPending}>
+      {/* Product types */}
+      <div>
+        <Label className="mb-2 block">Product Types</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {PRODUCT_TYPES.map(({ value, label }) => (
+            <label key={value} className="flex cursor-pointer items-center gap-2">
+              <Checkbox
+                checked={targetProducts.includes(value)}
+                onCheckedChange={() => toggleProduct(value)}
+              />
+              <span className="text-sm">{label}</span>
+            </label>
+          ))}
+        </div>
+        {targetProducts.length === 0 && (
+          <p className="mt-1 text-xs text-muted-foreground">Select at least one product type</p>
+        )}
+      </div>
+
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={!file || !title.trim() || targetProducts.length === 0 || createDesign.isPending}
+      >
         {createDesign.isPending ? (
           <>
             <Loader2 className="mr-2 animate-spin" />

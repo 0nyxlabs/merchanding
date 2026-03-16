@@ -20,14 +20,15 @@ export const CartItem: FC<CartItemProps> = ({
     <div className="flex gap-4 py-4">
       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg">
         <ImageWithFallback
-          src={item.image ?? ''}
-          alt={item.name}
+          src={item.thumbnailUrl ?? ''}
+          alt={item.designTitle}
           className="h-full w-full object-cover"
         />
       </div>
       <div className="flex flex-1 flex-col justify-between">
         <div>
-          <h4 className="text-sm font-medium leading-tight">{item.name}</h4>
+          <h4 className="text-sm font-medium capitalize leading-tight">{item.productType}</h4>
+          <p className="mt-0.5 text-xs text-muted-foreground">{item.designTitle} · {item.size}</p>
           <p className="mt-0.5 text-sm font-semibold">{formatCurrency(item.price)}</p>
         </div>
         <div className="flex items-center justify-between">

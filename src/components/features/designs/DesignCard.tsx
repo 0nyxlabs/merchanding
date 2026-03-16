@@ -27,15 +27,15 @@ export const DesignCard: FC<DesignCardProps> = ({ design, onPreview, onDelete })
         onClick={() => onPreview(design)}
       >
         <ImageWithFallback
-          src={design.imageUrl}
-          alt={design.name}
+          src={design.thumbnailUrl ?? design.originalFileUrl}
+          alt={design.title}
           className="h-full w-full object-cover transition-transform group-hover:scale-105"
         />
       </div>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h4 className="truncate font-medium">{design.name}</h4>
+            <h4 className="truncate font-medium">{design.title}</h4>
             <p className="text-xs text-muted-foreground">{formatDate(design.createdAt)}</p>
           </div>
           <Badge variant={statusVariant[design.status] ?? 'secondary'} className="shrink-0">

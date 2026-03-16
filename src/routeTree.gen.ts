@@ -19,6 +19,7 @@ import { Route as AdminDesignsManagementRouteImport } from './routes/admin/desig
 import { Route as AdminDashboardRouteImport } from './routes/admin/dashboard'
 import { Route as AdminCampaignsManagementRouteImport } from './routes/admin/campaigns-management'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
 import { Route as AuthenticatedDesignsRouteImport } from './routes/_authenticated/designs'
 import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticated/checkout'
 import { Route as AuthenticatedCartRouteImport } from './routes/_authenticated/cart'
@@ -78,6 +79,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEarningsRoute = AuthenticatedEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDesignsRoute = AuthenticatedDesignsRouteImport.update({
   id: '/designs',
   path: '/designs',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/cart': typeof AuthenticatedCartRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/designs': typeof AuthenticatedDesignsRoute
+  '/earnings': typeof AuthenticatedEarningsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/admin/campaigns-management': typeof AdminCampaignsManagementRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/cart': typeof AuthenticatedCartRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
   '/designs': typeof AuthenticatedDesignsRoute
+  '/earnings': typeof AuthenticatedEarningsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/admin/campaigns-management': typeof AdminCampaignsManagementRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/_authenticated/cart': typeof AuthenticatedCartRoute
   '/_authenticated/checkout': typeof AuthenticatedCheckoutRoute
   '/_authenticated/designs': typeof AuthenticatedDesignsRoute
+  '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/admin/campaigns-management': typeof AdminCampaignsManagementRoute
   '/admin/dashboard': typeof AdminDashboardRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/designs'
+    | '/earnings'
     | '/profile'
     | '/admin/campaigns-management'
     | '/admin/dashboard'
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/designs'
+    | '/earnings'
     | '/profile'
     | '/admin/campaigns-management'
     | '/admin/dashboard'
@@ -231,6 +242,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cart'
     | '/_authenticated/checkout'
     | '/_authenticated/designs'
+    | '/_authenticated/earnings'
     | '/_authenticated/profile'
     | '/admin/campaigns-management'
     | '/admin/dashboard'
@@ -324,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/earnings': {
+      id: '/_authenticated/earnings'
+      path: '/earnings'
+      fullPath: '/earnings'
+      preLoaderRoute: typeof AuthenticatedEarningsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/designs': {
       id: '/_authenticated/designs'
       path: '/designs'
@@ -402,6 +421,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCartRoute: typeof AuthenticatedCartRoute
   AuthenticatedCheckoutRoute: typeof AuthenticatedCheckoutRoute
   AuthenticatedDesignsRoute: typeof AuthenticatedDesignsRoute
+  AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedOrdersOrderIdRoute: typeof AuthenticatedOrdersOrderIdRouteWithChildren
   AuthenticatedOrdersIndexRoute: typeof AuthenticatedOrdersIndexRoute
@@ -411,6 +431,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCartRoute: AuthenticatedCartRoute,
   AuthenticatedCheckoutRoute: AuthenticatedCheckoutRoute,
   AuthenticatedDesignsRoute: AuthenticatedDesignsRoute,
+  AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedOrdersOrderIdRoute: AuthenticatedOrdersOrderIdRouteWithChildren,
   AuthenticatedOrdersIndexRoute: AuthenticatedOrdersIndexRoute,

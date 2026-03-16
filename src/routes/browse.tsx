@@ -58,7 +58,7 @@ function BrowsePage() {
       </div>
 
       {/* Campaign grid */}
-      <CampaignGrid campaigns={data?.data} isLoading={isLoading} />
+      <CampaignGrid campaigns={data} isLoading={isLoading} />
     </div>
   )
 }

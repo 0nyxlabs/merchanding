@@ -1,6 +1,6 @@
 import type { FC } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ShoppingCart, Menu, X, LogOut, User } from 'lucide-react'
+import { ShoppingCart, Menu, X, LogOut, User, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,16 +11,20 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { NotificationBell } from '@/components/features/notifications/NotificationBell'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/store/authStore'
 import { useCartStore } from '@/store/cartStore'
 import { useUIStore } from '@/store/uiStore'
-import { APP_NAME } from '@/utils/constants'
+import { APP_NAME, USER_ROLE } from '@/utils/constants'
 
 export const Header: FC = () => {
   const { user, isAuthenticated, isAdmin, signOut } = useAuth()
+  const userRole = useAuthStore((s) => s.user?.app_metadata?.role as string | undefined)
   const getTotalItems = useCartStore((s) => s.getTotalItems)
   const { isMobileMenuOpen, toggleMobileMenu, closeMobileMenu, openCartDrawer } = useUIStore()
   const cartCount = getTotalItems()
+  const hasEarnings = userRole === USER_ROLE.DESIGNER || userRole === USER_ROLE.INFLUENCER
 
   const initials = user?.user_metadata?.full_name
     ? (user.user_metadata.full_name as string)
@@ -60,17 +64,20 @@ export const Header: FC = () => {
         {/* Desktop actions */}
         <div className="hidden items-center gap-2 md:flex">
           {isAuthenticated && (
-            <Button variant="ghost" size="icon" onClick={openCartDrawer} className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              {cartCount > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
-                >
-                  {cartCount}
-                </Badge>
-              )}
-            </Button>
+            <>
+              <NotificationBell />
+              <Button variant="ghost" size="icon" onClick={openCartDrawer} className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
+                  >
+                    {cartCount}
+                  </Badge>
+                )}
+              </Button>
+            </>
           )}
 
           {isAuthenticated ? (
@@ -99,6 +106,14 @@ export const Header: FC = () => {
                     My Designs
                   </Link>
                 </DropdownMenuItem>
+                {hasEarnings && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/earnings">
+                      <DollarSign className="mr-2 h-4 w-4" />
+                      Earnings
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -149,6 +164,11 @@ export const Header: FC = () => {
                 <Link to="/designs" className="text-sm font-medium" onClick={closeMobileMenu}>
                   My Designs
                 </Link>
+                {hasEarnings && (
+                  <Link to="/earnings" className="text-sm font-medium" onClick={closeMobileMenu}>
+                    Earnings
+                  </Link>
+                )}
                 <Link to="/profile" className="text-sm font-medium" onClick={closeMobileMenu}>
                   Profile
                 </Link>

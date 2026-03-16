@@ -11,12 +11,19 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()((set, get) => ({
   user: null,
 
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    console.log(`[AUTH STORE] setUser — userId: ${user.id}, email: ${user.email}, role: ${user.app_metadata?.role ?? 'user'}`)
+    set({ user })
+  },
 
-  clearUser: () => set({ user: null }),
+  clearUser: () => {
+    console.log('[AUTH STORE] clearUser — limpiando usuario del store')
+    set({ user: null })
+  },
 
   isAdmin: () => {
     const { user } = get()
-    return user?.app_metadata?.role === 'admin'
+    const admin = user?.app_metadata?.role === 'admin'
+    return admin
   },
 }))
